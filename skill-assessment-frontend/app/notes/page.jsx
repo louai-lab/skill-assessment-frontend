@@ -1,40 +1,79 @@
 "use client";
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
-// import { useRouter } from "next/navigation";
+import { formatDateTime } from "@/Utils/DateUtils";
 
-async function getNotes() {
-  const pageNumber = 1;
-  const pageSize = 4;
-
+async function getNotes(pageNumber, pageSize, search) {
+  // console.log(search);
   const response = await fetch(
-    `http://localhost:4001/notes?pageNumber=${pageNumber}&pageSize=${pageSize}`
+    `http://localhost:4001/notes?search=${encodeURIComponent(search)}&pageNumber=${pageNumber}&pageSize=${pageSize}`
   );
 
-  const data = await response.json();
-  return data;
+  const { notes, noteCount } = await response.json();
+  return { notes, noteCount };
 }
 
 export default function NotesPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [id, setId] = useState();
   const [notes, setNotes] = useState([]);
+  const [noteCount, setNoteCount] = useState();
+  const [pageNumber, setPageNumber] = useState(1);
+  const pageSize = 4;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFake, setSearchFake] = useState("");
+  const [loading, setLoading] = useState(true);
 
-  // const router = useRouter()
+  let timer;
+
+  const handleSearchChange = (e) => {
+    const searchValue = e.target.value;
+    setSearchFake(searchValue);
+
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      setSearchQuery(searchValue);
+    }, 2000);
+  };
 
   useEffect(() => {
     const fetchNotes = async () => {
-      const notesData = await getNotes();
-      setNotes(notesData);
+      try {
+        setLoading(true);
+        const { notes, noteCount } = await getNotes(
+          pageNumber,
+          pageSize,
+          searchQuery
+        );
+        setNotes(notes);
+        setNoteCount(noteCount);
+      } catch (error) {
+        console.error("Error fetching notes:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchNotes();
-  }, []);
+  }, [pageNumber, searchQuery]);
+
+  const maxPages = Math.ceil(noteCount / pageSize);
+
+  const handleNextPage = () => {
+    if (pageNumber < maxPages) {
+      setPageNumber((prevPageNumber) => prevPageNumber + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (pageNumber > 1) {
+      setPageNumber((prevPageNumber) => prevPageNumber - 1);
+    }
+  };
 
   const handleOpenPopUpDelete = (id) => {
     setShowConfirm(true);
     setId(id);
-    // console.log(id);
   };
 
   const handleClosePopUpDelete = () => {
@@ -52,7 +91,7 @@ export default function NotesPage() {
       });
 
       if (response.ok) {
-        setNotes((prevNotes) => prevNotes.filter((note) => note._id !== id));
+        setNotes((prevNotes) => prevNotes.filter((note) => note?._id !== id));
         setShowConfirm(false);
       } else {
         console.error("Failed to delete note");
@@ -88,18 +127,6 @@ export default function NotesPage() {
               </div>
             </div>
           </div>
-          {/* <div
-            style={{
-              position: "absolute",
-              top: 0,
-              left: 0,
-              width: "100%",
-              height: "100%",
-              backgroundColor: "rgba(0, 0, 0, 0.8)",
-              zIndex: 1002,
-            }}
-            onClick={handleClosePopUpDelete}
-          ></div> */}
         </>
       )}
       <div className="py-8 px-4">
@@ -113,36 +140,73 @@ export default function NotesPage() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 gap-4">
-          {notes.map((note) => (
-            <div key={note._id} className="relative">
-              <button
-                onClick={() => handleOpenPopUpDelete(note._id)}
-                className="absolute top-2 right-2 bg-white shadow-md rounded-full p-2  hover:opacity-50 focus:outline-none transition-opacity duration-300"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="25"
-                  height="25"
-                  viewBox="0 0 24 24"
+        <input
+          type="text"
+          placeholder="Search by title..."
+          value={searchFake}
+          onChange={handleSearchChange}
+          className="border-gray-300 rounded-md px-4 py-2 mb-4"
+        />
+        {loading && <div>Loading ...</div>}
+        {!loading && (
+          <div className="grid grid-cols-1 gap-4">
+            {notes?.map((note) => (
+              <div key={note._id} className="relative">
+                <button
+                  onClick={() => handleOpenPopUpDelete(note._id)}
+                  className="absolute top-2 right-2 bg-white shadow-md rounded-full p-2  hover:opacity-50 focus:outline-none transition-opacity duration-300"
                 >
-                  <path
-                    fill="red"
-                    d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM8 9h8v10H8zm7.5-5l-1-1h-5l-1 1H5v2h14V4z"
-                  />
-                </svg>
-              </button>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="25"
+                    height="25"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      fill="red"
+                      d="M6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V7H6zM8 9h8v10H8zm7.5-5l-1-1h-5l-1 1H5v2h14V4z"
+                    />
+                  </svg>
+                </button>
 
-              <Link href={`/notes/${note._id}`}>
-                <div className="bg-white rounded-md shadow-md p-4">
-                  <h3 className="text-xl font-semibold mt-2">{note.title}</h3>
-                  <p className="text-gray-500 mt-2">
-                    Created At {note.createdAt}
-                  </p>
-                </div>
-              </Link>
-            </div>
-          ))}
+                <Link href={`/notes/${note._id}`}>
+                  <div className="bg-white rounded-md shadow-md p-4">
+                    <h3 className="text-xl font-semibold mt-2">{note.title}</h3>
+                    <div style={{ display: "flex", flexDirection: "column" }}>
+                      <small className="text-gray-500 mt-2">
+                        Created AT {formatDateTime(note.createdAt)}
+                      </small>
+                      <small className="text-gray-500 mt-2">
+                        Updated AT {formatDateTime(note.updatedAt)}
+                      </small>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex justify-between mt-4">
+          <button
+            className={`bg-blue-500 text-white px-4 py-2 rounded-md ${pageNumber === 1 ? "disabled" : ""}`}
+            onClick={handlePrevPage}
+            disabled={pageNumber === 1}
+            style={{ cursor: pageNumber === 1 ? "not-allowed" : "pointer" }}
+          >
+            Previous
+          </button>
+
+          <button
+            className={`bg-blue-500 text-white px-4 py-2 rounded-md ${pageNumber >= maxPages ? "disabled" : ""}`}
+            onClick={handleNextPage}
+            disabled={pageNumber >= maxPages}
+            style={{
+              cursor: pageNumber >= maxPages ? "not-allowed" : "pointer",
+            }}
+          >
+            Next
+          </button>
         </div>
       </div>
     </>
