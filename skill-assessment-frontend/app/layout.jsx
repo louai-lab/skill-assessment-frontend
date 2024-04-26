@@ -1,6 +1,7 @@
 import { Inter } from "next/font/google";
 import "./globals.css";
 import Link from "next/link";
+import { NoteProvider } from "@/DataContext/DataContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -14,10 +15,6 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <body className={inter.className}>
         <main>
-          {/* <nav>
-            <Link href="/">Home</Link>
-            <Link href="/notes">Notes</Link>
-          </nav> */}
           <nav className="border-b border-gray-200 py-4">
             <ul className="flex space-x-4">
               <li>
@@ -36,7 +33,7 @@ export default function RootLayout({ children }) {
             </ul>
           </nav>
 
-          {children}
+          <NoteProvider>{children}</NoteProvider>
         </main>
       </body>
     </html>

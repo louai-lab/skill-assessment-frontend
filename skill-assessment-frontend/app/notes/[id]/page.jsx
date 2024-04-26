@@ -5,6 +5,7 @@ import React, { useState, useEffect } from "react";
 export const dynamicParams = true;
 import { formatDateTime } from "@/Utils/DateUtils";
 
+// get the single note
 async function getNote(id) {
   try {
     const response = await fetch(`http://localhost:4001/notes/note/${id}`);
@@ -38,7 +39,7 @@ export default function NoteDetails({ params }) {
           setError("Note not found");
         } else {
           console.error("Error fetching note:", error.message);
-          setError("Failed to fetch note. Please try again later."); // Generic error message
+          setError("Failed to fetch note. Please try again later.");
         }
       }
     }
@@ -46,6 +47,7 @@ export default function NoteDetails({ params }) {
     fetchNote();
   }, [params.id]);
 
+  // handle the input
   const handleChange = (e) => {
     const { name, value } = e.target;
     setEditedNote((prevNote) => ({
@@ -54,6 +56,7 @@ export default function NoteDetails({ params }) {
     }));
   };
 
+  // To Open Pop Up Edit
   const handleOpenPopUpEdit = (id) => {
     setShowEdit(true);
     setId(id);
@@ -62,7 +65,6 @@ export default function NoteDetails({ params }) {
   // Save the note after editing
   const handleSave = async (e) => {
     e.preventDefault();
-
     try {
       const response = await fetch("http://localhost:4001/notes", {
         method: "PATCH",
@@ -92,6 +94,7 @@ export default function NoteDetails({ params }) {
     }
   };
 
+  // handle the created at and updated at
   const formattedCreatedAt = formatDateTime(note?.createdAt);
   const formattedUpdatedAt = formatDateTime(note?.updatedAt);
 
@@ -169,14 +172,13 @@ export default function NoteDetails({ params }) {
           </button>
         </div>
 
-        {/* <div className="bg-white rounded-md shadow-md p-6"> */}
         <div
           style={{
             backgroundColor: "white",
             borderRadius: "10px",
             width: "fitContent",
-            padding:"20px",
-            width:"260px"
+            padding: "20px",
+            width: "260px",
           }}
         >
           <h1 className="text-xl font-semibold mb-2">{note?.title}</h1>

@@ -2,16 +2,7 @@
 import Link from "next/link";
 import React, { useState, useEffect } from "react";
 import { formatDateTime } from "@/Utils/DateUtils";
-
-async function getNotes(pageNumber, pageSize, search) {
-  // console.log(search);
-  const response = await fetch(
-    `http://localhost:4001/notes?search=${encodeURIComponent(search)}&pageNumber=${pageNumber}&pageSize=${pageSize}`
-  );
-
-  const { notes, noteCount } = await response.json();
-  return { notes, noteCount };
-}
+import { useNoteContext } from "@/DataContext/DataContext";
 
 export default function NotesPage() {
   const [showConfirm, setShowConfirm] = useState(false);
@@ -23,9 +14,10 @@ export default function NotesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFake, setSearchFake] = useState("");
   const [loading, setLoading] = useState(true);
+  const { getNotes } = useNoteContext();
 
+  // handle search input
   let timer;
-
   const handleSearchChange = (e) => {
     const searchValue = e.target.value;
     setSearchFake(searchValue);
@@ -47,39 +39,45 @@ export default function NotesPage() {
         );
         setNotes(notes);
         setNoteCount(noteCount);
+        // console.log(notes);
       } catch (error) {
         console.error("Error fetching notes:", error);
       } finally {
         setLoading(false);
       }
     };
-
     fetchNotes();
   }, [pageNumber, searchQuery]);
 
+  // handle the next the previous with the total notes
   const maxPages = Math.ceil(noteCount / pageSize);
 
+  // To Paginate next notes
   const handleNextPage = () => {
     if (pageNumber < maxPages) {
       setPageNumber((prevPageNumber) => prevPageNumber + 1);
     }
   };
 
+  // To Paginate Previous notes
   const handlePrevPage = () => {
     if (pageNumber > 1) {
       setPageNumber((prevPageNumber) => prevPageNumber - 1);
     }
   };
 
+  // To Open Delete Pop Up
   const handleOpenPopUpDelete = (id) => {
     setShowConfirm(true);
     setId(id);
   };
 
+  // To Close Delete Pop Up
   const handleClosePopUpDelete = () => {
     setShowConfirm(false);
   };
 
+  // function delete note
   const handleDelete = async () => {
     try {
       const response = await fetch(`http://localhost:4001/notes`, {

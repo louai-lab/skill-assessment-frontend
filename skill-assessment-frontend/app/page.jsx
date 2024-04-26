@@ -1,8 +1,10 @@
 export default async function Home() {
   return (
     <main>
-      <h1>Home Page</h1>
-      <p>Some Content</p>
+      <p>
+        This is just a home page , to explore the Notes page , Kindly Click on
+        the Notes above{" "}
+      </p>
     </main>
   );
 }
