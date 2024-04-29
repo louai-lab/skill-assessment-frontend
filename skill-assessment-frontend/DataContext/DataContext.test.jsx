@@ -1,37 +1,48 @@
-// import { useNoteContext } from "./DataContext";
-// import { matchers } from "jest-json-schema";
-// expect.extend(matchers);
+import React from "react";
+import { render, act } from "@testing-library/react";
+import { NoteProvider, useNoteContext } from "./DataContext";
 
-// it("should return data with status 200", async () => {
-//   const getNotes = useNoteContext();
-//   const response = await getNotes();
-//   const body = await response.json();
+global.fetch = jest.fn(() =>
+  Promise.resolve({
+    json: () =>
+      Promise.resolve({
+        notes: [
+          { id: 1, title: "Note 1", content: "Content 1" },
+          { id: 2, title: "Note 2", content: "Content 2" },
+          { id: 3, title: "Note 3", content: "Content 3" },
+          { id: 4, title: "Note 4", content: "Content 4" },
+        ],
+        noteCount: 4,
+      }),
+  })
+);
 
-//   const noteSchema = {
-//     type: "object",
-//     properties: {
-//       _id: { type: "number" },
-//       title: { type: "string" },
-//       content: { type: "string" },
-//     },
-//     required: ["_id", "title", "content"],
-//   };
+describe("NoteProvider", () => {
+  it("provides getNotes function in context", async () => {
+    let getNotes;
 
-//   expect(response.status).toBe(200);
-//   expect(body.length).toBe(4);
+    const TestComponent = () => {
+      const { getNotes: contextGetNotes } = useNoteContext();
+      getNotes = contextGetNotes;
+      return null;
+    };
 
-//   body.forEach((note) => {
-//     expect(note).toMatchSchema(noteSchema);
-//   });
-// });
+    await act(async () => {
+      render(
+        <NoteProvider>
+          <TestComponent />
+        </NoteProvider>
+      );
+    });
 
-import request from 'supertest'
-import { getNotes } from "./DataContext";
+    expect(typeof getNotes).toBe("function");
 
-test("GET /api/data returns expected data", async () => {
-  const response = await request(getNotes).get(
-    `http://localhost:4001/notes?pageNumber=${1}&pageSize=${4}`
-  );
-  expect(response.status).toBe(200);
-  expect(response.body.notes).toHaveLength(4);
+    const { notes, noteCount } = await getNotes(1, 10, "searchTerm");
+    expect(notes).toHaveLength(4);
+    expect(noteCount).toBe(4);
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      "http://localhost:4001/notes?search=searchTerm&pageNumber=1&pageSize=10"
+    );
+  });
 });

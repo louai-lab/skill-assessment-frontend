@@ -20,11 +20,3 @@ export const NoteProvider = ({ children }) => {
     <NoteContext.Provider value={{ getNotes }}>{children}</NoteContext.Provider>
   );
 };
-
-// export const getNotes = async (search) => {
-//   const response = await fetch(
-//     `http://localhost:4001/notes?search=${encodeURIComponent(search)}&pageNumber=${1}&pageSize=${4}`
-//   );
-//   const { notes, noteCount } = await response.json();
-//   return { notes, noteCount };
-// };
